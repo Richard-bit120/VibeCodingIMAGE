@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analizador de animales</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">VIBE CODING · PROYECTO ACADÉMICO</span>
+    <h1>Analizador de imágenes de animales</h1>
+    <p>Cargá una fotografía, obtené predicciones de un modelo de visión artificial y guardá el análisis en SQLite.</p>
+  </div>
+</header>
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="messages">{% for category, message in messages %}
+      <div class="notice {{ category }}">{{ message }}</div>
+    {% endfor %}</div>{% endif %}
+  {% endwith %}
+  <section class="panel">
+    <div class="section-heading"><div><span class="step">01</span><h2>Analizar una fotografía</h2></div>
+      <p>JPG, PNG o WEBP · máximo 8 MB</p></div>
+    <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data" id="upload-form">
+      <label class="dropzone" for="imagen">
+        <span class="upload-icon">↑</span>
+        <strong>Elegí una fotografía de tu dispositivo</strong>
+        <span id="file-name">Todavía no seleccionaste ningún archivo</span>
+        <input type="file" name="imagen" id="imagen" accept=".jpg,.jpeg,.png,.webp,image/*" required>
+      </label>
+      <div class="preview-wrap" id="preview-wrap" hidden><img id="preview" alt="Vista previa de la fotografía"></div>
+      <div class="form-grid">
+        <label>Nombre común (opcional)<input name="nombre_comun" placeholder="Ej. Luna"></label>
+        <label>Especie confirmada (opcional)<input name="especie_confirmada" placeholder="Ej. gato doméstico"></label>
+        <label>Raza<input name="raza" placeholder="Si se conoce"></label>
+        <label>Color<input name="color" placeholder="Ej. marrón y blanco"></label>
+        <label>Tamaño<input name="tamano" placeholder="Pequeño, mediano, grande…"></label>
+        <label>Hábitat<input name="habitat" placeholder="Ej. hogar, bosque, granja"></label>
+        <label class="wide">Características observadas<textarea name="caracteristicas" rows="2" placeholder="Describí rasgos que puedas observar…"></textarea></label>
+      </div>
+      <button class="button" type="submit">Analizar y guardar <span>→</span></button>
+      <p class="fine-print">El modelo devuelve clases visuales probables de ImageNet; no garantiza una identificación taxonómica exacta.</p>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="section-heading"><div><span class="step">02</span><h2>Animales registrados</h2></div><span class="count">{{ animals|length }} registro(s)</span></div>
+    {% if animals %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Imagen</th><th>Animal / datos manuales</th><th>Predicción IA</th><th>Confianza</th><th></th></tr></thead>
+      <tbody>{% for a in animals %}
+        <tr>
+          <td>{% if a.imagen_path %}<img class="thumb" src="{{ url_for('static', filename=a.imagen_path) }}" alt="Foto del registro">{% endif %}</td>
+          <td><strong>{{ a.nombre_comun or 'Sin nombre' }}</strong><small>{{ a.especie_confirmada or 'Especie no confirmada' }}</small></td>
+          <td>{{ a.ultima_prediccion or 'Sin análisis' }}</td>
+          <td>{% if a.ultima_confianza is not none %}{{ "%.2f"|format(a.ultima_confianza) }}%{% else %}—{% endif %}</td>
+          <td><a class="text-link" href="{{ url_for('detail', animal_id=a.id) }}">Ver detalle →</a></td>
+        </tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty"><span>◎</span><strong>Todavía no hay registros</strong><p>Subí la primera fotografía para iniciar tu catálogo.</p></div>{% endif %}
+  </section>
+  <footer>Proyecto educativo · Flask + SQLite + ResNet-50 preentrenado</footer>
+</main>
+<script>
+const input = document.getElementById('imagen');
+const nameLabel = document.getElementById('file-name');
+const previewWrap = document.getElementById('preview-wrap');
+const preview = document.getElementById('preview');
+input.addEventListener('change', () => {
+  const file = input.files[0];
+  if (!file) { nameLabel.textContent = 'Todavía no seleccionaste ningún archivo'; previewWrap.hidden = true; return; }
+  nameLabel.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+  if (file.type.startsWith('image/')) {
+    preview.src = URL.createObjectURL(file);
+    previewWrap.hidden = false;
+  } else { previewWrap.hidden = true; }
+});
+document.getElementById('upload-form').addEventListener('submit', (event) => {
+  if (!input.files.length) { event.preventDefault(); alert('Seleccioná una imagen.'); }
+});
+</script>
+</body>
+</html>

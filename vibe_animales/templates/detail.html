@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detalle del animal · Analizador</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="hero compact"><div class="hero-inner"><a class="back" href="{{ url_for('index') }}">← Volver al catálogo</a><span class="eyebrow">REGISTRO #{{ animal.id }}</span><h1>{{ animal.nombre_comun or 'Animal sin nombre' }}</h1><p>Datos del registro e historial de análisis de imágenes.</p></div></header>
+<main class="container detail-grid">
+  <section class="panel">
+    {% if animal.imagen_path %}<img class="detail-image" src="{{ url_for('static', filename=animal.imagen_path) }}" alt="Fotografía del animal">{% endif %}
+    <h2>Datos del animal</h2>
+    <dl class="data-list">
+      <dt>Especie confirmada</dt><dd>{{ animal.especie_confirmada or 'No indicada' }}</dd>
+      <dt>Raza</dt><dd>{{ animal.raza or 'No indicada' }}</dd>
+      <dt>Color</dt><dd>{{ animal.color or 'No indicado' }}</dd>
+      <dt>Tamaño</dt><dd>{{ animal.tamano or 'No indicado' }}</dd>
+      <dt>Hábitat</dt><dd>{{ animal.habitat or 'No indicado' }}</dd>
+      <dt>Características</dt><dd>{{ animal.caracteristicas or 'No indicadas' }}</dd>
+      <dt>Fecha de registro</dt><dd>{{ animal.fecha_registro }}</dd>
+    </dl>
+    <form action="{{ url_for('delete_animal', animal_id=animal.id) }}" method="post" onsubmit="return confirm('¿Eliminar este registro y su historial?')"><button class="button danger" type="submit">Eliminar registro</button></form>
+  </section>
+  <section class="panel">
+    <span class="step">HISTORIAL</span><h2>Resultados del modelo</h2>
+    {% for a in analyses %}
+      <article class="analysis-card">
+        <div class="analysis-top"><strong>{{ a.etiqueta_predicha }}</strong><span class="status {{ a.estado }}">{{ a.estado }}</span></div>
+        <p class="muted">{{ a.fecha_analisis }} · Archivo: {{ a.nombre_archivo }}</p>
+        {% if a.confianza is not none %}<div class="confidence"><span style="width:{{ a.confianza }}%"></span></div><p class="muted">Confianza de la clase principal: {{ "%.2f"|format(a.confianza) }}%</p>{% endif %}
+        {% if a.results %}<h3>Top 5 clases predichas</h3><ol class="results">{% for r in a.results %}<li><span>{{ r.label }}</span><strong>{{ "%.2f"|format(r.confidence) }}%</strong></li>{% endfor %}</ol>{% else %}<p>No se pudo completar el análisis. Revisá la instalación del modelo y los mensajes de la aplicación.</p>{% endif %}
+      </article>
+    {% else %}<p>No hay análisis registrados.</p>{% endfor %}
+    <p class="fine-print">La confianza es la probabilidad estimada para una clase dentro de las categorías del modelo, no una garantía de que la especie sea correcta.</p>
+  </section>
+</main>
+</body></html>
